@@ -67,10 +67,10 @@ OUT="$COND_DIR/$POP/$REGION"
 
 # reference dir
 if [[ $POP == "Trans" || $POP == "Eur" ]]; then
-    REF_Eur="/scratch/sbcs/chenzs/New_Public_data/1KG/Eur/bychr"
+    REF_Eur="path/to/plink files/for LD estimation/European"
 fi
 if [[ $POP == "Trans" || $POP == "Asian" ]]; then
-    REF_Asian="/scratch/sbcs/chenzs/New_CRC_GWAS/genotype/Asian/forLD/6684"
+    REF_Asian="path/to/plink files/for LD estimation/East Asian"
 fi
 
 
@@ -128,12 +128,12 @@ function condition()
     fi
     
     if [[ $POP == "Trans" || $POP == "Asian" ]]; then
-        /scratch/sbcs/chenzs/CRC_GWAS/software/gcta_1.92.3beta2/gcta64  --bfile $REF_Asian/MEGA_RsqGT03_6684_chr${CHR}.dose.recode  --chr $CHR --maf 0.001 --cojo-file $out/$REGION.a.ma  --cojo-cond $asnp --out $out/$REGION.a.$step
+        gcta64  --bfile $REF_Asian/MEGA_RsqGT03_6684_chr${CHR}.dose.recode  --chr $CHR --maf 0.001 --cojo-file $out/$REGION.a.ma  --cojo-cond $asnp --out $out/$REGION.a.$step
         comp2line.hash.pl  -c 2 -q $out/$REGION.a.$step.cma.cojo -d 1 -db $out/$REGION.a.ma -e | perl -F"\t" -lane '{print "$F[1]\t$F[14]\t$F[15]\t$F[9]\t$F[10]\t$F[11]\t$F[12]\t$F[8]"}' > $out/$REGION.a.$step.cma.cojo_2
     fi
 
     if [[ $POP == "Trans" || $POP == "Eur" ]]; then
-	/scratch/sbcs/chenzs/CRC_GWAS/software/gcta_1.92.3beta2/gcta64 --bfile $REF_Eur/1kg.chr${CHR}.phase3.20130502.Eur --chr ${CHR} --maf 0.001 --cojo-file $out/$REGION.e.ma  --cojo-cond $esnp  --out $out/$REGION.e.$step
+	gcta64 --bfile $REF_Eur/1kg.chr${CHR}.phase3.20130502.Eur --chr ${CHR} --maf 0.001 --cojo-file $out/$REGION.e.ma  --cojo-cond $esnp  --out $out/$REGION.e.$step
        comp2line.hash.pl -c 2 -q $out/$REGION.e.$step.cma.cojo -d 1 -db $out/$REGION.e.ma -e | perl -F"\t" -lane '{print "$F[0]:$F[2]\t$F[14]\t$F[15]\t$F[9]\t$F[10]\t$F[11]\t$F[12]\t$F[8]"}' > $out/$REGION.e.$step.cma.cojo_2
        sed -i 's/Chr:bp/SNP/' $out/$REGION.e.$step.cma.cojo_2    
     fi
@@ -170,7 +170,7 @@ function meta()
 ###################################################################################################
 
 echo "                 "
-echo "Let's to get ccv for each indepedent signals in risk $REGION"
+echo " get ccv for each indepedent signals in risk $REGION"
 echo "                 "
 
 if [[ -f $OUT/$REGION.indep.snplist ]] || [[ -f $OUT/$REGION.indep.snplist.eur ]]; then
@@ -289,7 +289,7 @@ do
 		# get variants after conditioning on the analyzed independent association, pvalue change fold > 100
 		echo $leadsnp > $CCV_OUT/snp.2.list
 		snp2="$CCV_OUT/snp.2.list"
-		/scratch/sbcs/chenzs/CRC_GWAS/software/gcta_1.92.3beta2/gcta64  --bfile $REF_Eur/1kg.chr${CHR}.phase3.20130502.Eur --chr ${CHR} --maf 0.001 --cojo-file $CCV_OUT/$REGION.e.ma --cojo-cond $snp2 --out $CCV_OUT/$REGION.e.$step.temp
+		gcta_1.92.3beta2/gcta64  --bfile $REF_Eur/1kg.chr${CHR}.phase3.20130502.Eur --chr ${CHR} --maf 0.001 --cojo-file $CCV_OUT/$REGION.e.ma --cojo-cond $snp2 --out $CCV_OUT/$REGION.e.$step.temp
 		
 		sed '1d' $CCV_OUT/$REGION.e.$step.temp.cma.cojo | perl -F"\t" -slane 'if($F[12] !~/NA/){$fd=($F[7]/$F[12]); if($fd < 0.0001){print "$y\tsignal_$s\t$z\t$F[1]\t$F[12]\t$F[7]\tEuropean"}}else{if($F[12] eq "NA"){print "$y\tsignal_$s\t$z\t$F[1]\t$F[12]\t$F[7]\tEuropean"}}' -- -y=$REGION -z=$leadsnp -s=$step |cut -f 4 > $CCV_OUT/temp2
 		
@@ -323,7 +323,7 @@ do
 		# get variants after conditioning on the analyzed independent association, pvalue change fold > 100
 		echo $leadsnp > $CCV_OUT/snp.2.list
 		snp2="$CCV_OUT/snp.2.list"
-		/scratch/sbcs/chenzs/CRC_GWAS/software/gcta_1.92.3beta2/gcta64  --bfile $REF_Asian/MEGA_RsqGT03_6684_chr${CHR}.dose.recode  --chr $CHR --maf 0.001 --cojo-file $CCV_OUT/$REGION.a.ma --cojo-cond $snp2 --out $CCV_OUT/$REGION.a.$step.temp
+		gcta64  --bfile $REF_Asian/MEGA_RsqGT03_6684_chr${CHR}.dose.recode  --chr $CHR --maf 0.001 --cojo-file $CCV_OUT/$REGION.a.ma --cojo-cond $snp2 --out $CCV_OUT/$REGION.a.$step.temp
 
 		sed '1d' $CCV_OUT/$REGION.a.$step.temp.cma.cojo | perl -F"\t" -slane 'if($F[12] !~/NA/){$fd=($F[7]/$F[12]); if($fd < 0.01){print "$y\tsignal_$s\t$z\t$F[1]\t$F[12]\t$F[7]\tAsian"}}else{if($F[12] eq "NA"){print "$y\tsignal_$s\t$z\t$F[1]\t$F[12]\t$F[7]\tAsian"}}' -- -y=$REGION -z=$leadsnp -s=$step |cut -f 4 > $CCV_OUT/temp2
 		
@@ -446,11 +446,11 @@ if [[ $POP == "Trans" ]]; then
 
 		# get variants after conditioning on the analyzed independent association, pvalue change fold > 100
 
-		/scratch/sbcs/chenzs/CRC_GWAS/software/gcta_1.92.3beta2/gcta64 --bfile $REF_Eur/1kg.chr${CHR}.phase3.20130502.Eur --chr ${CHR} --maf 0.001 --cojo-file $CCV_OUT/$REGION.e.ma --cojo-cond $esnp2 --out $CCV_OUT/$REGION.e.$step.temp
+		gcta64 --bfile $REF_Eur/1kg.chr${CHR}.phase3.20130502.Eur --chr ${CHR} --maf 0.001 --cojo-file $CCV_OUT/$REGION.e.ma --cojo-cond $esnp2 --out $CCV_OUT/$REGION.e.$step.temp
 		comp2line.hash.pl -c 2 -q $CCV_OUT/$REGION.e.$step.temp.cma.cojo -d 1 -db $CCV_OUT/$REGION.e.ma -e | perl -F"\t" -lane '{print "$F[0]:$F[2]\t$F[14]\t$F[15]\t$F[9]\t$F[10]\t$F[11]\t$F[12]\t$F[8]"}' > $CCV_OUT/$REGION.e.$step.temp.cma.cojo_2
 		sed -i 's/Chr:bp/SNP/' $CCV_OUT/$REGION.e.$step.temp.cma.cojo_2
 		
-		/scratch/sbcs/chenzs/CRC_GWAS/software/gcta_1.92.3beta2/gcta64 --bfile $REF_Asian/MEGA_RsqGT03_6684_chr${CHR}.dose.recode --chr $CHR --maf 0.001 --cojo-file $CCV_OUT/$REGION.a.ma --cojo-cond $asnp2 --out $CCV_OUT/$REGION.a.$step.temp
+		gcta64 --bfile $REF_Asian/MEGA_RsqGT03_6684_chr${CHR}.dose.recode --chr $CHR --maf 0.001 --cojo-file $CCV_OUT/$REGION.a.ma --cojo-cond $asnp2 --out $CCV_OUT/$REGION.a.$step.temp
 		comp2line.hash.pl  -c 2 -q $CCV_OUT/$REGION.a.$step.temp.cma.cojo -d 1 -db $CCV_OUT/$REGION.a.ma -e | perl -F"\t" -lane '{print "$F[1]\t$F[14]\t$F[15]\t$F[9]\t$F[10]\t$F[11]\t$F[12]\t$F[8]"}' > $CCV_OUT/$REGION.a.$step.temp.cma.cojo_2
 
 		echo "SCHEME   STDERR" > $CCV_OUT/$REGION.metal
