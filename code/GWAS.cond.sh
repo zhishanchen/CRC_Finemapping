@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# This script is to perform forward stepwise conditional analysis and get ccv for each indepedent signal.
+# This script is to perform forward stepwise conditional analysis to identify indepedent signals.
 # author: zhishan chen
 # email: zhishan118@gmail.com
 
@@ -67,15 +67,15 @@ OUT="$COND_DIR/$POP/$REGION"
 
 # LD reference dir
 if [[ $POP == "Trans" || $POP == "Eur" ]]; then
-    REF_Eur="/scratch/sbcs/chenzs/New_Public_data/1KG/Eur/bychr"
+    REF_Eur="path/to/plink files/for LD estimation/European"
 fi
 if [[ $POP == "Trans" || $POP == "Asian" ]]; then
-    REF_Asian="/scratch/sbcs/chenzs/New_CRC_GWAS/genotype/Asian/forLD/6684"
+    REF_Asian="path/to/plink files/for LD estimation/East Asian"
 fi
 
 
 #######################################################
-####                    GWAS                       ####
+####   get GWAS data for specific region           ####
 #######################################################
 
 if [[ $POP == "Trans" ]]; then
@@ -126,9 +126,9 @@ fi
 function condition()
 {
     if [[ $POP == "Trans" ]]; then
-	local esnp=$1
-	local asnp=$2
-	local step=$3
+	local esnp=$1  # snp in European, using rsid
+	local asnp=$2  # snp in East Asian, using coordinate 
+	local step=$3  # condition steps
 	local out=$4
     fi
     
@@ -145,13 +145,13 @@ function condition()
     fi
     
     if [[ $POP == "Trans" || $POP == "Asian" ]]; then
-	/nobackup/sbcs/scratch/chenzs/CRC_GWAS/software/gcta_1.92.3beta2/gcta64 --bfile $REF_Asian/MEGA_RsqGT03_6684_chr${CHR}.dose.recode  --chr $CHR --maf 0.001 --cojo-file $out/$REGION.a.ma  --cojo-cond $asnp --out $out/$REGION.a.$step
-	perl /data1/chenz27/tmp/myscript/script/comp2line.hash.pl  -c 2 -q $out/$REGION.a.$step.cma.cojo -d 1 -db $out/$REGION.a.ma -e | perl -F"\t" -lane '{print "$F[1]\t$F[14]\t$F[15]\t$F[9]\t$F[10]\t$F[11]\t$F[12]\t$F[8]"}' > $out/$REGION.a.$step.cma.cojo_2
+	gcta64 --bfile $REF_Asian/MEGA_RsqGT03_6684_chr${CHR}.dose.recode  --chr $CHR --maf 0.001 --cojo-file $out/$REGION.a.ma  --cojo-cond $asnp --out $out/$REGION.a.$step
+	perl comp2line.hash.pl  -c 2 -q $out/$REGION.a.$step.cma.cojo -d 1 -db $out/$REGION.a.ma -e | perl -F"\t" -lane '{print "$F[1]\t$F[14]\t$F[15]\t$F[9]\t$F[10]\t$F[11]\t$F[12]\t$F[8]"}' > $out/$REGION.a.$step.cma.cojo_2
     fi
 
     if [[ $POP == "Trans" || $POP == "Eur" ]]; then
-	/nobackup/sbcs/scratch/chenzs/CRC_GWAS/software/gcta_1.92.3beta2/gcta64 --bfile $REF_Eur/1kg.chr${CHR}.phase3.20130502.Eur --chr ${CHR} --maf 0.001 --cojo-file $out/$REGION.e.ma  --cojo-cond $esnp  --out $out/$REGION.e.$step
-	perl /data1/chenz27/tmp/myscript/script/comp2line.hash.pl -c 2 -q $out/$REGION.e.$step.cma.cojo -d 1 -db $out/$REGION.e.ma -e | perl -F"\t" -lane '{print "$F[0]:$F[2]\t$F[14]\t$F[15]\t$F[9]\t$F[10]\t$F[11]\t$F[12]\t$F[8]"}' > $out/$REGION.e.$step.cma.cojo_2
+        gcta64 --bfile $REF_Eur/1kg.chr${CHR}.phase3.20130502.Eur --chr ${CHR} --maf 0.001 --cojo-file $out/$REGION.e.ma  --cojo-cond $esnp  --out $out/$REGION.e.$step
+	perl comp2line.hash.pl -c 2 -q $out/$REGION.e.$step.cma.cojo -d 1 -db $out/$REGION.e.ma -e | perl -F"\t" -lane '{print "$F[0]:$F[2]\t$F[14]\t$F[15]\t$F[9]\t$F[10]\t$F[11]\t$F[12]\t$F[8]"}' > $out/$REGION.e.$step.cma.cojo_2
 	sed -i 's/Chr:bp/SNP/' $out/$REGION.e.$step.cma.cojo_2    
     fi
 }
@@ -178,7 +178,7 @@ function meta()
     echo "OUTFILE $out/${REGION}_${step}_ .TBL" >> $out/$REGION.metal
     echo "ANALYZE HETEROGENEITY" >> $out/$REGION.metal
     
-    /nobackup/sbcs/scratch/chenzs/CRC_GWAS/software/metal $out/$REGION.metal
+    metal $out/$REGION.metal
 }
 
 
@@ -205,7 +205,6 @@ if [[ $POP == "Trans" || $POP == "Asian" ]]; then
 
 fi
 
-
 if [[ $POP == "Trans" || $POP == "Eur" ]]; then
     echo "This step need strictly formatted GWAS summary data"
     ROW_marker="17"
@@ -216,7 +215,7 @@ if [[ $POP == "Trans" || $POP == "Eur" ]]; then
     grep "$REGION\b" $GWAS_SUM_E | perl -F"\t" -slane '$gwas=join"\t",@F[$x..$y];print "$F[$z]\t$gwas\t$F[$s]"' -- -x=$ROW_START -y=$ROW_END -z=$ROW_SNP -s=$ROW_SAMPLE > $OUT/$REGION.e.ma
 
     if [[ $REGION == "region_31" ]]; then	
-	grep -vE 'rs4421005' $OUT/$REGION.e.ma > $OUT/temp # For region_31 in European, the top1 SNP are not in 1KG, use the second one
+	grep -vE 'rs4421005' $OUT/$REGION.e.ma > $OUT/temp # For region_31 in European, the top SNP are not in 1KG, use the second one
 	mv $OUT/temp $OUT/$REGION.e.ma
     fi
 
@@ -269,7 +268,7 @@ if [[ $POP == "Eur" ]]; then
     leadsnp=`grep "$REGION\b" $GWAS_SUM_E  | head -n 1 |cut -f $(echo $ROW_SNP)`
     
     if [[ $REGION == "region_31" ]]; then
-	leadsnp=`grep "$REGION\b" $GWAS_SUM_E | grep -vE 'rs4421005' | head -n 1 | cut -f $(echo $ROW_SNP)` # For region_31 in European, the top1 SNP are not in 1KG, use the second one
+	leadsnp=`grep "$REGION\b" $GWAS_SUM_E | grep -vE 'rs4421005' | head -n 1 | cut -f $(echo $ROW_SNP)` # For region_31 in European, the top SNP are not in 1KG, use the second one
     fi
     
     ROW_SNP_PVALUE=`expr $ROW_marker - 1`
@@ -331,8 +330,8 @@ if [[ $POP == "Trans" ]]; then
     asnp="$OUT/$REGION.indep.snplist.asian"
     esnp="$OUT/$REGION.indep.snplist.eur"
     
-    condition $esnp $asnp $STEP $OUT
-    meta $STEP $OUT
+    condition $esnp $asnp $STEP $OUT  # conditional analysis
+    meta $STEP $OUT # meta-analysis
 
     PVALUE=`sort -k10,10g $OUT/${REGION}_${STEP}_1.TBL | head -n 2 | sed '1d' | perl -F"\t" -lane 'if($F[10] eq "++" || $F[10] eq "--"){print $F[9]}else{print "1"}'`
     pva=`printf "%.7f" $PVALUE`
@@ -342,12 +341,13 @@ if [[ $POP == "Trans" ]]; then
 	echo "no variant is retained after round $STEP conditional analysis"
 	pva="1"
     fi 
-
+  
+    # whether the most significant conditional p value < 0.000001?
     while [[ $pva < $CUTOFF ]]
     do
         leadsnp_a=`sort -k10,10g $OUT/${REGION}_${STEP}_1.TBL | perl -F"\t" -lane 'if($F[10] eq "++" || $F[10] eq "--"){print $_}' | head -n 1 | cut -f 1`
 	leadsnp_e=`grep $leadsnp_a $GWAS_SUM_T |cut -f 23`
-	echo $leadsnp_a >> $OUT/$REGION.indep.snplist.asian
+	echo $leadsnp_a >> $OUT/$REGION.indep.snplist.asian  
 	echo $leadsnp_e >> $OUT/$REGION.indep.snplist.eur      
 	asnp="$OUT/$REGION.indep.snplist.asian"
 	esnp="$OUT/$REGION.indep.snplist.eur"
