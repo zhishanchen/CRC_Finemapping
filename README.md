@@ -46,3 +46,20 @@ bash Asian_eQTL.sh
 Rscript Asian_eQTL.R
 ```
 
+
+### 5. mQTL analysis
+#### trans-ancestry
+```
+perl Trans_mQTL.GTEx.pl chr.list
+Rscript Trans_mQTL.Coloc.R
+Rscript meta_Trans_mQTL.step1.R 
+Rscript meta_Trans_mQTL.step2.R
+```
+
+#### European 
+```
+perl Eur_mQTL.GTEx.pl chr.list
+Rscript Eur_mQTL.Coloc.R
+Rscript meta_Eur_mQTL.step1.R
+Rscript meta_Eur_mQTL.step2.R
+```

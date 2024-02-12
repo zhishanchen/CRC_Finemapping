@@ -19,9 +19,9 @@ echo "run analysis in $WORK_DIR"
 echo "........................"
 
 # GWAS
-GWAS_SUM_A="/nobackup/sbcs/chenz27/fine-mapping6/gwas/07302022/CRC_consortium_ALL_risk_SNPs.txt_latest.bed.merge.region.gwas_ACCC.rsid"
-GWAS_SUM_E="/nobackup/sbcs/chenz27/fine-mapping6/gwas/07302022/CRC_consortium_ALL_risk_SNPs.txt_latest.bed.merge.region.gwas_Eur.rsid"
-GWAS_SUM_T="/nobackup/sbcs/chenz27/fine-mapping6/gwas/07302022/CRC_consortium_ALL_risk_SNPs.txt_latest.bed.merge.region.gwas_Trans.rsid"
+GWAS_SUM_A="/path/to/CRC_consortium_ALL_risk_SNPs.txt_latest.bed.merge.region.gwas_ACCC.rsid"
+GWAS_SUM_E="/path/to/CRC_consortium_ALL_risk_SNPs.txt_latest.bed.merge.region.gwas_Eur.rsid"
+GWAS_SUM_T="/path/to/CRC_consortium_ALL_risk_SNPs.txt_latest.bed.merge.region.gwas_Trans.rsid"
 
 # input - European CCVs
 

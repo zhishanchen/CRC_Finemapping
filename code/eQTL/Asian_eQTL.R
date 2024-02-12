@@ -13,16 +13,16 @@ ccv_file <- args[3]
 
 ### inputs ###
 # 0/1/2
-genotype_file <- paste0("/nobackup/sbcs/chenz27/CRC_TWAS/genotype4/merge/chr",chrom,".gt.gt")
+genotype_file <- paste0("/path/to/chr",chrom,".gt.gt")
 # snp annotation
-snp_annot_file <- paste0("/nobackup/sbcs/chenz27/CRC_TWAS/genotype4/merge/annotation/Asian_MODELsnp.chr",chrom,".annotation")
+snp_annot_file <- paste0("/path/to/annotation/Asian_MODELsnp.chr",chrom,".annotation")
 #
 
 # expression
-expression <- "/nobackup/sbcs/chenz27/CRC_TWAS/RNA/analyze-11302020/rna/12102020-update/381samples_used_364sample_QN.expression_PEER_inverse.txt"
+expression <- "/path/to/381samples_used_364sample_QN.expression_PEER_inverse.txt"
 
 # gene annotation
-gene_annot_file <- "/scratch/sbcs/chenzs/reference/Gene_anno/gencode.v19/gencode.v19.annotation.gtf"
+gene_annot_file <- "gencode.v19.annotation.gtf"
 
 
 ### functions ###
@@ -76,7 +76,7 @@ snp_annot$varID2 <- gsub("\\d+:\\d+;(\\d+:\\d+):\\S+:\\S+","\\1",snp_annot$varID
 snp_annot_used <- snp_annot[snp_annot$varID2 %in% ccv[,19],] # snp annotation for ccv in chrom
 
 # head of vcf file
-vcfhead <- read.table("/nobackup/sbcs/chenz27/CRC_TWAS/genotype4/merge/vcf.head",header = F, stringsAsFactors = F)
+vcfhead <- read.table("/path/to/vcf.head",header = F, stringsAsFactors = F)
 vcfhead <- gsub("WG\\d+-\\S+-(CNUHHCRC_\\d+)@\\d+","\\1",vcfhead, perl=TRUE)
 vcfhead <- gsub('CNUHH-CRC-(\\d+)_QC-3158-Cai_\\S+','CNUHHCRC_\\1',vcfhead, perl=T)
 vcfhead <- gsub('FMMU-(CC\\d+N)_QC-3158-Cai_\\S+','FMMU_\\1',vcfhead, perl =T)
@@ -96,11 +96,11 @@ gt_used <- gt_used[order(rownames(gt_used)),]
 # run association
 
 # output
-fp_out<-file(paste0(outdir,"/Trans_in_ACCC_eQTL_chr",chrom,"_output.txt"),open="w")
+fp_out<-file(paste0(outdir,"/ACCC_eQTL_chr",chrom,"_output.txt"),open="w")
 
 sink(fp_out)
 
-cat("rsid","SNP","gene","gene_name","mc","maf","beta","se","t-pvalue","p-value","alt_allele","\n",sep="\t")
+cat("SNP","gene","gene_name","mc","maf","beta","se","t-pvalue","p-value","alt_allele","\n",sep="\t")
 
 for (i in 1:dim(gt_used)[2])
 {

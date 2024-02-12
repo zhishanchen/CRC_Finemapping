@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 use strict;
 
-my $eqtl="/scratch/sbcs/chenzs/New_Public_data/GTEx_v8/eQTL_all_association/GTEx_Analysis_v8_QTLs_GTEx_Analysis_v8_eQTL_all_associations_Colon_Transverse.allpairs.txt";
-my $gtf="/scratch/sbcs/chenzs/New_Public_data/GTEx_v8/reference_genome/STAR-index/star2.7.9a/100bp/gencode.v26.annotation.gene.gtf";
+my $eqtl="GTEx_Analysis_v8_QTLs_GTEx_Analysis_v8_eQTL_all_associations_Colon_Transverse.allpairs.txt";
+my $gtf="gencode.v26.annotation.gene.gtf";
 my $snp=$ARGV[0];
 my $out=$ARGV[1];
 

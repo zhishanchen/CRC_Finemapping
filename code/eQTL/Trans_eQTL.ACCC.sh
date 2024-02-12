@@ -19,12 +19,11 @@ echo "run analysis in $WORK_DIR"
 echo "........................"
 
 # GWAS
-GWAS_SUM_T="/nobackup/sbcs/chenz27/fine-mapping6/gwas/07302022/CRC_consortium_ALL_risk_SNPs.txt_latest.bed.merge.region.gwas_Trans.rsid"
+GWAS_SUM_T="/path/to/CRC_consortium_ALL_risk_SNPs.txt_latest.bed.merge.region.gwas_Trans.rsid"
 
 # Genotype
 
-VCF="/scratch/sbcs/chenzs/CRC_TWAS/genotype4/merge/TWAS.R03.vcf.gz"
-
+VCF="/path/to/genotype.vcf.gz"
 
 # input - Trans CCVs
 
@@ -38,27 +37,9 @@ chrlist="$WORK_DIR/chr.list"
 
 input="$WORK_DIR/ALL_INDEP_CCV_Trans.txt.tmp"
 
-# eQTL
-# extract genotype for SNPs
-#parallel -q echo perl -F\"\\t\" -lane \''if($F[18]=~/(\d+):(\d+)/){if($1=={}){print "$1\t$2"}}'\' $input \> $OUT_DIR/{}.snp :::: $chrlist | bash
-
-#parallel -q echo tabix $VCF -R $OUT_DIR/{}.snp \> $OUT_DIR/{}.vcf.tmp :::: $chrlist |bash
-
-#tabix -h $VCF $OUT_DIR/1.snp > $OUT_DIR/vcf.head
-
-#parallel -q echo cat $OUT_DIR/vcf.head $OUT_DIR/{}.vcf.tmp  \> $OUT_DIR/{}.vcf :::: $chrlist |bash
-
-## recode
-#module load PLINK/1.9b_5.2
-#parallel -q echo plink --vcf $OUT_DIR/{}.vcf --make-bed --const-fid --out $OUT_DIR/{} :::: $chrlist |bash
-#parallel -q echo plink --bfile $OUT_DIR/{} --recode A --out $OUT_DIR/{} :::: $chrlist |bash
-#parallel -q echo sed \''s/ /\t/g'\' $OUT_DIR/{}.raw \|sed \''s/NA//g'\' \> $OUT_DIR/{}.txt :::: $chrlist |bash
-
 echo "........................"
 echo "run eQTL analysis       "
 echo "........................"
-
-#module load GCC/8.2.0  CUDA/10.1.105  OpenMPI/3.1.4 R/3.6.0
 
 parallel -q echo Rscript Trans_eQTL.ACCC.R {} $OUT_DIR $input :::: $chrlist |parallel -j 8 bash -c
 
