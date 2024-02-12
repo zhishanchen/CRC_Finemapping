@@ -1,5 +1,5 @@
 # CRC_Finemapping
-Main code used in the CRC finemapping paper:	
+Main code used in the CRC finemapping paper	
 **Fine-mapping analysis including over 254,000 East Asian and European descendants identifies 136 putative colorectal cancer susceptibility genes**
 
 **Abstract**   
