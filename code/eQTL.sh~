@@ -1,0 +1,99 @@
+
+COND_DIR=`pwd|perl -F"/" -lane '$p=join"/",@F[0..($#F-1)];print $p'`
+QTL_DIR="$COND_DIR/eQTL"
+CCV_DIR="$COND_DIR/ccv"
+ASIAN_DIR="$QTL_DIR/asian-eQTL"
+
+#cp $CCV_DIR/ALL_INDEP_CCV.txt $QTL_DIR
+perl -F"\t" -lane '$keep=join"\t",@F[3..$#F];{print "$F[3]\t$F[0]\t$F[9]\t$keep"}' $CCV_DIR/All_ccv.txt_keep > ALL_INDEP_CCV.txt
+input="ALL_INDEP_CCV.txt"
+
+grep "Trans-ancestry" $QTL_DIR/$input > $QTL_DIR/${input}_Trans_CCV.txt
+grep "European" $QTL_DIR/$input > $QTL_DIR/${input}_Eur_CCV.txt
+grep "Asian" $QTL_DIR/$input > $QTL_DIR/${input}_Asian_CCV.txt
+
+#### GWAS summary ####
+GWAS_SUM_E="/nobackup/sbcs/chenz27/fine-mapping6/gwas/07302022/CRC_consortium_ALL_risk_SNPs.txt_latest.bed.merge.region.gwas_Eur.rsid"
+GWAS_SUM_T="/nobackup/sbcs/chenz27/fine-mapping6/gwas/07302022/CRC_consortium_ALL_risk_SNPs.txt_latest.bed.merge.region.gwas_Trans.rsid"
+GWAS_SUM_A="/nobackup/sbcs/chenz27/fine-mapping6/gwas/07302022/CRC_consortium_ALL_risk_SNPs.txt_latest.bed.merge.region.gwas_ACCC.rsid"
+
+#### European ####
+comp2line.hash.pl -c 7 -q $QTL_DIR/${input}_Eur_CCV.txt -d 23 -db $GWAS_SUM_E -e |cut -f 1-11,19 |perl -F"\t" -lane 'if($F[11]=~/(\d+):(\d+)/){print "chr$1\t$2\t$2\t$_"}' > $QTL_DIR/${input}_Eur_CCV.txt.bed
+cut -f 1-3,7-10,13,14,15 $QTL_DIR/${input}_Eur_CCV.txt.bed >  $QTL_DIR/${input}_Eur_CCV.txt.bed.v2
+CrossMap.py bed hg19ToHg38.over.chain.gz  $QTL_DIR/${input}_Eur_CCV.txt.bed.v2  $QTL_DIR/${input}_Eur_CCV.txt.bed.hg38
+
+#### Trans-ancestry ####
+comp2line.hash.pl -c 7 -q $QTL_DIR/${input}_Trans_CCV.txt -d 23 -db $GWAS_SUM_T -e |cut -f 1-11,19 |perl -F"\t" -lane 'if($F[11]=~/(\d+):(\d+)/){print "chr$1\t$2\t$2\t$_"}' > $QTL_DIR/${input}_Trans_CCV.txt.bed
+cut -f 1-3,7-10,13,14,15 $QTL_DIR/${input}_Trans_CCV.txt.bed > $QTL_DIR/${input}_Trans_CCV.txt.bed.v2
+CrossMap.py bed hg19ToHg38.over.chain.gz $QTL_DIR/${input}_Trans_CCV.txt.bed.v2 $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38
+sed 's/81053330/83095585/1' $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38.unmap|sed 's/81053330/83095585/1'| sed 's/81054079/83096335/1' | sed 's/81054079/83096335/1' > $QTL_DIR/tmp
+cat $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38 $QTL_DIR/tmp > $QTL_DIR/tmp2
+mv $QTL_DIR/tmp2 $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38
+rm $QTL_DIR/tmp*
+
+#### eQTL GTEx ####
+perl eQTL.GTExV8.pl $QTL_DIR/${input}_Eur_CCV.txt.bed.hg38 $QTL_DIR/${input}_Eur_CCV.txt.bed.hg38_eQTL_GTExV8.txt 
+perl eQTL.GTExV8.pl $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38 $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8.txt
+
+perl -F"\t" -lane '{print "$F[6]\t$F[11]\t$F[12]\t$F[13]\t$F[14]\t$F[15]\t$F[16]\t$F[17]"}' $QTL_DIR/${input}_Eur_CCV.txt.bed.hg38_eQTL_GTExV8.txt > $QTL_DIR/${input}_Eur_CCV.txt.bed.hg38_eQTL_GTExV8.txt.V2
+perl -F"\t" -lane '{print "$F[6]\t$F[11]\t$F[12]\t$F[13]\t$F[14]\t$F[15]\t$F[16]\t$F[17]"}' $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8.txt > $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8.txt.V2
+
+
+#### eQTL ACCC ####
+comp2line.hash.pl -c 7 -q $QTL_DIR/${input}_Trans_CCV.txt -d 23 -db $GWAS_SUM_T -e > $ASIAN_DIR/${input}_Trans_CCV.txt.v2
+comp2line.hash.pl -c 7 -q $QTL_DIR/${input}_Asian_CCV.txt -d 23 -db $GWAS_SUM_A -e > $ASIAN_DIR/${input}_Asian_CCV.txt.v2
+cat $ASIAN_DIR/${input}_Trans_CCV.txt.v2 $ASIAN_DIR/${input}_Asian_CCV.txt.v2 | cut -f 3-7,19 > $ASIAN_DIR/For_Asian_eQTL_CCVs.txt
+perl -F"\t" -lane 'if($F[5]=~/(\d+):\d+/){print $1}' $ASIAN_DIR/For_Asian_eQTL_CCVs.txt  |sort |uniq  > $ASIAN_DIR/chr.list
+
+parallel -q echo perl -F\"\\t\" -lane \''if($F[5]=~/(\d+):(\d+)/){if($1=={}){print "$1\t$2"}}'\' $ASIAN_DIR/For_Asian_eQTL_CCVs.txt \> $ASIAN_DIR/{}.snp ::: $(cat $ASIAN_DIR/chr.list )|bash
+parallel -q echo tabix /scratch/sbcs/chenzs/CRC_TWAS/genotype4/merge/TWAS.R03.vcf.gz -R $ASIAN_DIR/{}.snp \> $ASIAN_DIR/{}.vcf ::: $(cat $ASIAN_DIR/chr.list) |parallel -j 12 bash -c
+tabix -h /scratch/sbcs/chenzs/CRC_TWAS/genotype4/merge/TWAS.R03.vcf.gz $ASIAN_DIR/1.snp  > $ASIAN_DIR/vcf.head
+module load PLINK/1.9b_5.2
+parallel -q echo cat $ASIAN_DIR/vcf.head $ASIAN_DIR/{}.vcf \> $ASIAN_DIR/{}.vcf.2 ::: $(cat $ASIAN_DIR/chr.list)|bash
+parallel -q echo plink --vcf $ASIAN_DIR/{}.vcf.2 --make-bed --const-fid --out $ASIAN_DIR/{} ::: $(cat $ASIAN_DIR/chr.list)  |parallel -j 12 bash -c
+parallel -q echo plink --bfile $ASIAN_DIR/{} --recode A --out $ASIAN_DIR/{} ::: $(cat $ASIAN_DIR/chr.list) |parallel -j 12 bash -c
+parallel -q echo less -S $ASIAN_DIR/{}.raw \|sed \''s/ /\t/g'\' \|sed \''s/NA//g'\' \> $ASIAN_DIR/{}.txt ::: $(cat $ASIAN_DIR/chr.list) |parallel -j 12 bash -c
+module load GCC/8.2.0  CUDA/10.1.105  OpenMPI/3.1.4 R/3.6.0
+parallel -q echo Rscript $ASIAN_DIR/Asian_eQTL.R $ASIAN_DIR/{} ::: $(cat $ASIAN_DIR/chr.list) |parallel -j 22 bash -c
+cat $ASIAN_DIR/ACCC_eQTL_chr*_output.txt |awk '!seen[$1,$2,$3,$4,$5]++'   > $ASIAN_DIR/ACCC_eQTL_ALL_output.txt
+
+#### get eQTL ACCC for Trans CCVs ####
+cut -f 3-7,19 $ASIAN_DIR/${input}_Trans_CCV.txt.v2  > $ASIAN_DIR/${input}_Trans_CCV.txt.v3
+
+comp2line.hash.pl -c 6 -q $ASIAN_DIR/${input}_Trans_CCV.txt.v3 -d 1 -db $ASIAN_DIR/ACCC_eQTL_ALL_output.txt -e > $ASIAN_DIR/${input}_Trans_CCV.txt.v3_eQTL_ACCC.txt
+
+perl -F"\t" -lane 'if($F[7]=~/(ENSG\d+).\d+/){print "$_\t$1"}' $ASIAN_DIR/${input}_Trans_CCV.txt.v3_eQTL_ACCC.txt |cut -f 1-14,16 > $ASIAN_DIR/${input}_Trans_CCV.txt.v3_eQTL_ACCC.txt.V2
+
+comp2line.hash.pl -c 15 -q $ASIAN_DIR/${input}_Trans_CCV.txt.v3_eQTL_ACCC.txt.V2 -d 1 -db $ASIAN_DIR/gencode.v26.annotation.gtf_gene_name.v2  -e |grep -v nocommon > $ASIAN_DIR/${input}_Trans_CCV.txt.v3_eQTL_ACCC.txt.V3
+
+perl -F"\t" -lane '{print "$F[4]\t$F[16]\t$F[8]\t$F[9]\t$F[10]\t$F[11]\t$F[12]\t$F[13]"}' $ASIAN_DIR/${input}_Trans_CCV.txt.v3_eQTL_ACCC.txt.V3 > $ASIAN_DIR/${input}_Trans_CCV.txt.v3_eQTL_ACCC.txt.V4
+
+#### get eQTL ACCC for Asian CCVs ####
+grep Asian $ASIAN_DIR/For_Asian_eQTL_CCVs.txt > $ASIAN_DIR/${input}_Asian_CCV.txt.v3
+
+comp2line.hash.pl -c 6 -q $ASIAN_DIR/${input}_Asian_CCV.txt.v3 -d 1 -db $ASIAN_DIR/ACCC_eQTL_ALL_output.txt -e > $ASIAN_DIR/${input}_Asian_CCV.txt.v3_eQTL_ACCC.txt
+
+perl -F"\t" -lane 'if($F[7]=~/(ENSG\d+).\d+/){print "$_\t$1"}' $ASIAN_DIR/${input}_Asian_CCV.txt.v3_eQTL_ACCC.txt |cut -f 1-14,16 > $ASIAN_DIR/${input}_Asian_CCV.txt.v3_eQTL_ACCC.txt.V2
+
+comp2line.hash.pl -c 15 -q $ASIAN_DIR/${input}_Asian_CCV.txt.v3_eQTL_ACCC.txt.V2 -d 1 -db $ASIAN_DIR/gencode.v26.annotation.gtf_gene_name.v2  -e | grep -v nocommon >$ASIAN_DIR/${input}_Asian_CCV.txt.v3_eQTL_ACCC.txt.V3
+
+Rscript $ASIAN_DIR/meta_Asian.R $ASIAN_DIR ${input}_Asian_CCV.txt.v3_eQTL_ACCC.txt.V3 $QTL_DIR/${input}_Asian_CCV.txt
+
+comp2line.hash.pl -c 1 -q $ASIAN_DIR/${input}_Asian_CCV.txt.v3_eQTL_ACCC.txt.V3_Padjusted.txt -d 4 -db  $ASIAN_DIR/${input}_Asian_CCV.txt.v3 -last -e|cut -f 1-7,9 > $ASIAN_DIR/${input}_Asian_CCV.txt.v3_eQTL_ACCC.txt.V3_Padjusted.txt.v2
+
+#### Trans ####
+
+comp2line.hash.pl -mode ncol -c 1,2 -q $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8.txt.V2 -d 1,2 -db $ASIAN_DIR/${input}_Trans_CCV.txt.v3_eQTL_ACCC.txt.V4 -e > $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8_ACCC.txt_1
+
+comp2line.hash.pl -mode ncol -c 1,2 -q $ASIAN_DIR/${input}_Trans_CCV.txt.v3_eQTL_ACCC.txt.V4 -d 1,2 -db $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8.txt.V2 -e | perl -F"\t" -lane 'if($F[8]=~/nocommon/){print "$F[0]\t$F[1]\tnocommon\tnocommon\tnocommon\tnocommon\tnocommon\tnocommon\t$F[0]\t$F[1]\t$F[2]\t$F[3]\t$F[4]\t$F[5]\t$F[6]\t$F[7]"}' > $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8_ACCC.txt_2
+
+cat $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8_ACCC.txt_1 $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8_ACCC.txt_2 > $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8_ACCC.txt_total.txt
+
+#sed 's/nocommon[0-9]*/NA/g'  $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8_ACCC.txt_total.txt > $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8_ACCC.txt_total.txt.V2
+
+#perl -F"\t" -lane 'if(/NA/){print $_}else{if($F[7] eq $F[15]){print $_}else{$beta=$F[12]*-1;$t=$F[13]*-1;$gtex=join"\t",@F[0..11];print "$gtex\t$beta\t$t\t$F[14]\t$F[15]"}}' $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8_ACCC.txt_total.txt.V2 > $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8_ACCC.txt_total.txt.V3
+
+perl -F"\t" -lane 'if(/nocommon/){print $_}else{if($F[7] eq $F[15]){print $_}else{$beta=$F[12]*-1;$t=$F[13]*-1;$gtex=join"\t",@F[0..11];print "$gtex\t$beta\t$t\t$F[14]\t$F[15]"}}' $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8_ACCC.txt_total.txt > $QTL_DIR/${input}_Trans_CCV.txt.bed.hg38_eQTL_GTExV8_ACCC.txt_total.txt.V2
+
+
+
